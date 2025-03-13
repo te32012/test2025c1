@@ -1,0 +1,55 @@
+version: '3.0'
+
+services:
+
+  application:
+    container_name: application
+    build:
+      context: .
+    ports:
+      - 2024:2024
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_BASE=root
+      - HOST_APPLICATION=application
+      - PORT_APPLICATION=2024
+    depends_on:
+      postgres:
+        condition: service_healthy
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - ./create_db.sql:/docker-entrypoint-initdb.d/create_db.sql
+      - ./postgresql.conf:/usr/share/postgresql/postgresql.conf.sample
+  pgadm:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4:7
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:5050"
+      - "80:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgadmin-data:
